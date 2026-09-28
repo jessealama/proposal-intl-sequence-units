@@ -86,12 +86,30 @@ nf.format([1, 80]);
 ## Issue #8: Time/duration units
 
 - **July Plenary Discussion:**
-  - *Exclude from NumberFormat:* Duration units have domain-specific complexities (DST boundaries, calendar month lengths) and already have dedicated APIs (`Temporal.Duration`, `Intl.DurationFormat`).
-  - *Include for Amount:* CLDR defines duration units/conversions; developers expect unified handling.
-- **Suggested Path Forward:**
-  - `Intl.NumberFormat` keeps its current list of sanctioned units, without time units
-  - `Amount` supports representing time units and limited conversions from CLDR
-  - `Amount.prototype.toLocaleString` delegates to `Intl.DurationFormat` for time units
+  - *Intl perspective (exclude):*
+    - Durations have domain quirks (DST, calendar month lengths)
+    - `Intl.DurationFormat` & `Temporal.Duration` are purpose-built
+  - *Amount perspective (include):*
+    - `Amount` is a unified value type for all units
+    - CLDR `units.xml` defines time units and conversion factors
+
+---
+
+## Issue #8: Suggested Path Forward
+
+- **Intl.NumberFormat:** Excludes time units from sequence units
+- **Amount:** Supports time units; delegates formatting
+  - *(Details to be discussed and brought back in an update to Amount)*
+
+```javascript
+// Intl.NumberFormat rejects time sequence units:
+new Intl.NumberFormat('en-US', { style: 'unit', unit: 'hour-and-minute' });
+// ❌ RangeError
+
+// Amount supports time units, delegating formatting:
+const amt = new Amount([2, 30], 'hour-and-minute');
+amt.toLocaleString('en-US'); // "2 hr, 30 min" (via Intl.DurationFormat)
+```
 
 ---
 
