@@ -33,13 +33,27 @@ Measurement systems frequently employ multiple units in sequence to express a si
 Old:
 
 ```javascript
-// TODO: format meter-and-centimeter with old object syntax
+const nf = new Intl.NumberFormat('en-US', {
+  style: 'unit',
+  unit: 'meter-and-centimeter',
+  unitDisplay: 'long',
+});
+
+nf.format({ meter: 1, centimeter: 80 });
+// "1 meter, 80 centimeters"
 ```
 
 New:
 
 ```javascript
-// TODO: format meter-and-centimeter with new array syntax
+const nf = new Intl.NumberFormat('en-US', {
+  style: 'unit',
+  unit: 'meter-and-centimeter',
+  unitDisplay: 'long',
+});
+
+nf.format([1, 80]);
+// "1 meter, 80 centimeters"
 ```
 
 ---
@@ -48,7 +62,7 @@ New:
 
 - **Topic:** Handling significant digit options (`maximumSignificantDigits`, `minimumSignificantDigits`, and rounding priorities) when formatting sequence units.
 - **Background:** Sequence units frequently use non-decimal ratios (e.g. 12 inches/foot, 16 oz/lb). Significant digit rounding across compound fields is ill-defined and brittle (e.g. how to distribute significant digits or round across non-decimal boundaries).
-- **TG2 Recommentation:** Throw an exception whenever `Intl.NumberFormat` is configured with significant digit rounding (as tracked by the internal `[[RoundingType]]` slot).
+- **TG2 Recommendation:** Throw an exception whenever `Intl.NumberFormat` is configured with significant digit rounding (as tracked by the internal `[[RoundingType]]` slot).
 
 ---
 
