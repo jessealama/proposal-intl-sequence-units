@@ -42,7 +42,7 @@ While this is possible, it is not ergonomic and is prone to user error:
 
 `Intl.NumberFormat` is extended to support compound unit identifiers joined by the `-and-` separator (e.g., `foot-and-inch`, `meter-and-centimeter`, `pound-and-ounce`).
 
-When a sequence unit is specified, `format` and `formatToParts` accept a JavaScript object as input. Each property of the object must correspond to a sub-unit identified in the sequence.
+When a sequence unit is specified, `format` and `formatToParts` accept an array (or iterable) of values as input. Each element of the array must correspond in order to a sub-unit identified in the sequence.
 
 ### Examples
 
@@ -53,10 +53,10 @@ const nf = new Intl.NumberFormat('en-US', {
 });
 
 // "5 feet, 11 inches"
-nf.format({ foot: 5, inch: 11 }); 
+nf.format([5, 11]); 
 
 // "-5 feet, 11 inches" (Only the first unit renders the minus sign)
-nf.format({ foot: -5, inch: -11 }); 
+nf.format([-5, -11]); 
 
 const massNf = new Intl.NumberFormat('en-US', {
   style: 'unit',
@@ -65,62 +65,65 @@ const massNf = new Intl.NumberFormat('en-US', {
 });
 
 // "2 pounds, 4 ounces" (Actual output is locale-dependent)
-massNf.format({ pound: 2, ounce: 4 });
+massNf.format([2, 4]);
 ```
 
 ### Technical Semantics
 
 The formatting procedure for sequence units follows these steps:
-1. **Validation**: The sequence must be a valid combination of sanctioned units measuring the same quantity and arranged in descending order of magnitude. The sanctioned sequences are explicitly listed in the specification (e.g., `foot-and-inch`, `kilogram-and-gram`). Note that time units are excluded from sequence units, as they are managed by `Intl.DurationFormat`.
-2. **Extraction**: Values are retrieved from the input object based on the sub-unit keys.
+1. **Validation**: The sequence must be a valid combination of sanctioned units measuring the same quantity and arranged in descending order of magnitude. The sanctioned sequences are explicitly listed in the specification (e.g., `foot-and-inch`, `kilogram-and-gram`). Note that time units are excluded from sequence units, as they are managed by `Intl.DurationFormat`. Significant digit rounding options (`minimumSignificantDigits`, `maximumSignificantDigits`, or `roundingPriority` values other than `"auto"`, tracked by `[[RoundingType]]`) are disallowed for sequence units and throw a `RangeError` during construction.
+2. **Extraction**: Values are retrieved in order from the input array.
 3. **Component Formatting**:
     - **Intermediate Units**: Required to be integers, and formatted as integers.
-    - **Terminal Unit**: Formatted according to the rounding and fraction settings configured on the `Intl.NumberFormat` instance.
+    - **Terminal Unit**: Formatted according to the fraction digit and rounding settings configured on the `Intl.NumberFormat` instance.
 4. **Composition**: The resulting component strings are concatenated using `Intl.ListFormat` with `type: "unit"` and the specified `unitDisplay` style to ensure locale-appropriate conjunctions and spacing.
 
 ### Error Handling
 
-Inputs to `format` or `formatToParts` must contain a value for every sub-unit defined in the unit identifier. Properties are read in the order they appear in the unit identifier sequence. If a required property is `undefined` or missing, a `TypeError` is thrown immediately. 
+Inputs to `format` or `formatToParts` must be an array (or iterable object) whose length matches the number of sub-units defined in the unit identifier; otherwise, a `RangeError` is thrown. If any element in the sequence is `undefined`, a `TypeError` is thrown immediately.
 
-After all properties have been read and converted to numbers, two final validations occur:
-1. **Mixed Signs**: All sub-units must have the same sign. Mixing positive and negative values (e.g., `{ foot: 5, inch: -11 }`) throws a `RangeError`.
-2. **Intermediate Integers**: All intermediate sub-units (all but the final one) must be integers. Providing a non-integer intermediate value (e.g., `{ foot: 5.5, inch: 6 }`) throws a `RangeError`.
+After all elements have been read and converted to numbers, two final validations occur:
+1. **Mixed Signs**: All sub-units must have the same sign. Mixing positive and negative values (e.g., `[5, -11]`) throws a `RangeError`.
+2. **Intermediate Integers**: All intermediate sub-units (all but the final one) must be integers. Providing a non-integer intermediate value (e.g., `[5.5, 6]`) throws a `RangeError`.
 
 ```javascript
 // Throws RangeError: invalid unit sequence (not in a sanctioned group or order)
 new Intl.NumberFormat('en-US', { style: 'unit', unit: 'meter-and-foot' });
+
+// Throws RangeError: significant digit options are disallowed with sequence units
+new Intl.NumberFormat('en-US', { style: 'unit', unit: 'foot-and-inch', maximumSignificantDigits: 2 });
 
 const nf = new Intl.NumberFormat('en-US', {
   style: 'unit',
   unit: 'foot-and-inch',
 });
 
-// Throws TypeError: 'inch' property is missing
-nf.format({ foot: 5 }); 
+// Throws RangeError: array length does not match the unit sequence
+nf.format([5]); 
 
 // Throws RangeError: sub-units have mixed signs
-nf.format({ foot: 5, inch: -11 });
+nf.format([5, -11]);
 
 // Throws RangeError: intermediate sub-unit is not an integer
-nf.format({ foot: 5.5, inch: 6 });
+nf.format([5.5, 6]);
 ```
 
 ### Integration with Intl Unit Protocol
 
-This proposal is compatible with the [Intl Unit Protocol](https://github.com/tc39/proposal-intl-unit-protocol). When utilizing the protocol, the `value` property accepts the object mapping sub-units to their respective magnitudes:
+This proposal is compatible with the [Intl Unit Protocol](https://github.com/tc39/proposal-intl-unit-protocol). When utilizing the protocol, the `value` property accepts the array of sub-unit magnitudes:
 
 ```javascript
 const nf = new Intl.NumberFormat('en-US');
 
 nf.format({ 
   unit: "foot-and-inch", 
-  value: { foot: 6, inch: 4 } 
+  value: [6, 4] 
 });
 ```
 
 ### Integration with Amount Proposal
 
-This proposal aligns with the [Amount](https://github.com/tc39/proposal-intl-amount) proposal. To support sequence units, an `Amount` instance encapsulates a structured value (an object mapping sub-units to magnitudes) rather than a scalar numeric value.
+This proposal aligns with the [Amount](https://github.com/tc39/proposal-intl-amount) proposal. To support sequence units, an `Amount` instance accepts an array of sub-unit magnitudes (e.g., `new Amount([2, 30], 'hour-and-minute')`) rather than a scalar numeric value.
 
 ## Prior Art
 
