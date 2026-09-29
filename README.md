@@ -42,7 +42,7 @@ While this is possible, it is not ergonomic and is prone to user error:
 
 `Intl.NumberFormat` is extended to support compound unit identifiers joined by the `-and-` separator (e.g., `foot-and-inch`, `meter-and-centimeter`, `pound-and-ounce`).
 
-When a sequence unit is specified, `format` and `formatToParts` accept an array (or iterable) of values as input. Each element of the array must correspond in order to a sub-unit identified in the sequence.
+When a sequence unit is specified, `format` and `formatToParts` accept an array (or iterable, see [#19](https://github.com/tc39/proposal-intl-sequence-units/issues/19)) of values as input. Each element of the array must correspond in order to a sub-unit identified in the sequence.
 
 ### Examples
 
@@ -80,10 +80,10 @@ The formatting procedure for sequence units follows these steps:
 
 ### Error Handling
 
-Inputs to `format` or `formatToParts` must be an array (or iterable object) whose length matches the number of sub-units defined in the unit identifier; otherwise, a `RangeError` is thrown. If any element in the sequence is `undefined`, a `TypeError` is thrown immediately.
+Inputs to `format` or `formatToParts` must be an array whose length matches the number of sub-units defined in the unit identifier; otherwise, a `RangeError` is thrown. If any element in the sequence is `undefined`, a `TypeError` is thrown immediately.
 
 After all elements have been read and converted to numbers, two final validations occur:
-1. **Mixed Signs**: All sub-units must have the same sign. Mixing positive and negative values (e.g., `[5, -11]`) throws a `RangeError`.
+1. **Mixed Signs**: All sub-units must have the same sign. Mixing positive and negative values (e.g., `[5, -11]`) throws a `RangeError`. Zero values (`0` and `-0`) are considered neither positive nor negative for this check and may appear alongside either sign. Because only the first sub-unit renders a minus sign (and negative signs—including on `-0`—are stripped from subsequent sub-units), a leading `-0` is used to display a minus sign when the first sub-unit is zero (e.g., `[-0, -6]` formats as `"-0 feet, 6 inches"`, whereas `[0, -6]` omits the minus sign).
 2. **Intermediate Integers**: All intermediate sub-units (all but the final one) must be integers. Providing a non-integer intermediate value (e.g., `[5.5, 6]`) throws a `RangeError`.
 
 ```javascript
