@@ -75,9 +75,9 @@ nf.format([1, 80]);
 
 ## Issue #14: Significant digit options
 
-- **The Problem:** Sequence units use non-decimal ratios (12 in/ft, 16 oz/lb). Significant digits across mixed units are ill-defined:
-  - Applying sigfigs to the overall magnitude: 5 ft 10 in has 2 significant digits, but it is silly to round 5 ft 6 in to 5 ft 10 in
-  - Applying sigfigs to the least significant unit: 2 sigfigs could produce `"3 ft, 0.18 in"`, which is not 2 significant digits overall
+- **The Problem:** Significant digits across mixed units are ill-defined:
+  - _Applying sigfigs to the overall digits:_ Could round 5 ft 11 in to 5 ft 10 in
+  - _Applying sigfigs to the least significant unit:_ Could produce 3 ft 0.18 in
 - **TG2 Recommendation:** Disallow significant digit options for sequence units; throw a `RangeError` if configured (tracked by internal `[[RoundingType]]`).
 - **Note:** Fraction digits (`minimumFractionDigits`, `maximumFractionDigits`) remain supported, applied to the terminal sub-unit only.
 
@@ -85,11 +85,12 @@ nf.format([1, 80]);
 
 ## Issue #8: Time/duration units
 
-- **July Plenary Discussion:**
-  - *Intl perspective (exclude):*
+July Plenary Discussion:
+
+- **Intl perspective:**
     - Durations have domain quirks (DST, calendar month lengths)
     - `Intl.DurationFormat` & `Temporal.Duration` are purpose-built
-  - *Amount perspective (include):*
+- **Amount perspective:**
     - `Amount` is a unified value type for all units
     - CLDR `units.xml` defines time units and conversion factors
 
@@ -97,9 +98,8 @@ nf.format([1, 80]);
 
 ## Issue #8: Suggested Path Forward
 
-- **Intl.NumberFormat:** Excludes time units from sequence units
-- **Amount:** Supports time units; delegates formatting
-  - *(Details to be discussed and brought back in an update to Amount)*
+- **Intl.NumberFormat:** Continue to exclude time units from sequence units
+- **Amount:** Supports time units to the scope in CLDR units.xml; delegate formatting to `Intl.DurationFormat` (details to be discussed and brought back in an update to Amount)
 
 ```javascript
 // Intl.NumberFormat rejects time sequence units:
@@ -108,7 +108,8 @@ new Intl.NumberFormat('en-US', { style: 'unit', unit: 'hour-and-minute' });
 
 // Amount supports time units, delegating formatting:
 const amt = new Amount([2, 30], 'hour-and-minute');
-amt.toLocaleString('en-US'); // "2 hr, 30 min" (via Intl.DurationFormat)
+amt.toLocaleString('en-US');
+// "2 hr, 30 min" (via Intl.DurationFormat)
 ```
 
 ---
@@ -117,5 +118,6 @@ amt.toLocaleString('en-US'); // "2 hr, 30 min" (via Intl.DurationFormat)
 
 - **Issue #16:** Array input (`[1, 80]`) — reduces footguns, easier invariants
 - **Issue #14:** Disallow significant digits — avoids non-decimal ambiguity
-- **Issue #8:** Exclude time units from `Intl.NumberFormat` — delegate via `Amount`
-- **Stage 2.7 Reviewers:** [Eemeli Aro (EAO) and Dan Minor (DLM)](https://github.com/tc39/notes/blob/main/meetings/2026-05/may-20.md#intl-sequence-units-for-stage-1-or-2)
+- **Issue #8:** Continue to exclude time sequence units from `Intl.NumberFormat`
+
+Next time: approaching Stage 2.7. (Reviewers are [Eemeli Aro (EAO) and Dan Minor (DLM)](https://github.com/tc39/notes/blob/main/meetings/2026-05/may-20.md#intl-sequence-units-for-stage-1-or-2))
